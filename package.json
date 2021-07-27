@@ -1,0 +1,54 @@
+{
+  "name": "AmongusTrackerClient",
+  "version": "1.0.0",
+  "description": "```sh npm install ```",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/masakiq/amongus-tracker-client.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/masakiq/amongus-tracker-client/issues"
+  },
+  "homepage": "https://github.com/masakiq/amongus-tracker-client#readme",
+  "devDependencies": {
+    "electron": "^13.1.7",
+    "electron-builder": "^22.11.7"
+  },
+  "dependencies": {
+    "discord-rpc": "github:masakiq/RPC",
+    "ws": "^7.5.3"
+  },
+  "build": {
+    "appId": "com.amongus-tracker",
+    "files": [
+      "package.json",
+      "package-lock.json",
+      "src/main.js"
+    ],
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/Icon-512.png"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/Icon-512.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "protocols": {
+      "name": "AmongUsTracker",
+      "schemes": [
+        "amongustracker"
+      ]
+    }
+  }
+}
