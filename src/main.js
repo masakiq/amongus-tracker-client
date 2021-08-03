@@ -11,14 +11,11 @@ const development = process.env.ENV_TYPE == 'development';
 
 let mainWindow;
 const CustomUrlScheme = 'amongustracker';
-var allowedOrigin = [
-  'https://amongus-tracker.com',
-  'https://edge.amongus-tracker.com',
-  'https://development.amongus-tracker.com'
-];
+var allowedOrigin = [];
 if (development) {
-  allowedOrigin.push('http://localhost:3000');
   allowedOrigin.push('http://localhost:8080');
+} else {
+  allowedOrigin.push('https://client.amongus-tracker.com');
 }
 
 function createWindow() {
@@ -32,15 +29,13 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
-      preload: path.join(__dirname, 'preload.js'),
     },
   });
 
   if (development) {
     mainWindow.loadURL('http://localhost:8080');
   } else {
-    // mainWindow.loadURL('https://amongus-tracker.com');
-    mainWindow.loadURL('https://development.amongus-tracker.com');
+    mainWindow.loadURL('https://client.amongus-tracker.com');
   }
 
   // mainWindow.loadURL(url.format({

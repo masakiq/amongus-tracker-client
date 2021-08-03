@@ -1,5 +1,5 @@
 {
-  "name": "AmongusTrackerClient",
+  "name": "AmongUsTracker",
   "version": "1.0.0",
   "description": "```sh npm install ```",
   "main": "src/main.js",
