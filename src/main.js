@@ -149,6 +149,11 @@ function handleAuthenticationError(error) {
     args['cmd'] = 'ALREADY_AUTHENTICATED';
     var json = JSON.stringify(args);
     sendMessageToWebBrowser(json);
+  } else if (error.message == 'Token does not match current user') {
+    var args = {};
+    args['cmd'] = 'TOKEN_DOES_NOT_MATCH_CURRENT_USER';
+    var json = JSON.stringify(args);
+    sendMessageToWebBrowser(json);
   }
 }
 
