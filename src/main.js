@@ -223,6 +223,17 @@ rpcClient.on('ready', (args) => {
   sendMessageToWebBrowser(json);
 });
 
+rpcClient.on('connected', (args) => {
+  console.log('connected');
+});
+
+rpcClient.on('disconnected', (args) => {
+  var result = {};
+  result['cmd'] = 'DISCONNECTED_WITH_DISCORD';
+  var json = JSON.stringify(result);
+  sendMessageToWebBrowser(json);
+});
+
 rpcClient.on('VOICE_CHANNEL_SELECT', (args) => {
   console.log('VOICE_CHANNEL_SELECT');
   try {
