@@ -85,7 +85,7 @@ app.setAsDefaultProtocolClient(CustomUrlScheme);
 
 // ** for RPC **
 
-const rpcClient = new RPC.Client({ transport: 'ipc' });
+let rpcClient;
 // check origin
 // https://github.com/websockets/ws/issues/1271
 const wsServer = new WS.Server({
@@ -105,6 +105,13 @@ wsServer.on('connection', ws => {
   ws.on('message', message => handleMessageFromWebBrowser(message));
   ws.on('close', () => {
     console.log('wsServer close');
+    try {
+      if (rpcClient != null) {
+        rpcClient.destroy();
+      }
+    } catch (error) {
+      console.error(error);
+    }
   });
 });
 
@@ -133,6 +140,8 @@ function handleMessageFromWebBrowser(message) {
 }
 
 function authenticate(args) {
+  rpcClient = new RPC.Client({ transport: 'ipc' });
+  addListenerRpcClient(rpcClient);
   rpcClient.login({ clientId: args['client_id'], accessToken: args['access_token'], scopes: args['scopes'] }).catch(function(error) {
     handleAuthenticationError(error);
   });
@@ -144,6 +153,7 @@ function handleAuthenticationError(error) {
     args['cmd'] = 'COULD_NOT_CONNECT';
     var json = JSON.stringify(args);
     sendMessageToWebBrowser(json);
+    rpcClient = null;
   } else if (error.message == 'Already authenticated') {
     var args = {};
     args['cmd'] = 'ALREADY_AUTHENTICATED';
@@ -216,64 +226,89 @@ function unsubscribe(channelId) {
   subscribed = [];
 }
 
-rpcClient.on('ready', (args) => {
-  var result = {};
-  result['cmd'] = 'SUCCESS_AUTHENTICATE';
-  var json = JSON.stringify(result);
-  sendMessageToWebBrowser(json);
-});
 
-rpcClient.on('VOICE_CHANNEL_SELECT', (args) => {
-  console.log('VOICE_CHANNEL_SELECT');
-  try {
-    args['cmd'] = 'VOICE_CHANNEL_SELECT';
-    var json = JSON.stringify(args);
+function addListenerRpcClient(rpcClient) {
+  rpcClient.on('ready', (args) => {
+    var result = {};
+    result['cmd'] = 'SUCCESS_AUTHENTICATE';
+    var json = JSON.stringify(result);
     sendMessageToWebBrowser(json);
-  } catch (error) {
-    console.error(error);
-  }
-});
+  });
 
-rpcClient.on('VOICE_STATE_CREATE', (args) => {
-  console.log('VOICE_STATE_CREATE');
-  try {
-    args['cmd'] = 'VOICE_STATE_CREATE';
-    var json = JSON.stringify(args);
-    sendMessageToWebBrowser(json);
-  } catch (error) {
-    console.error(error);
-  }
-});
+  rpcClient.on('connected', (args) => {
+    console.log('connected');
+  });
 
-rpcClient.on('VOICE_STATE_DELETE', (args) => {
-  console.log('VOICE_STATE_DELETE');
-  try {
-    args['cmd'] = 'VOICE_STATE_DELETE';
-    var json = JSON.stringify(args);
-    sendMessageToWebBrowser(json);
-  } catch (error) {
-    console.error(error);
-  }
-});
+  rpcClient.transport.on('close', (args) => {
+    console.log('close');
+  });
 
-rpcClient.on('SPEAKING_START', (args) => {
-  // console.log('SPEAKING_START');
-  try {
-    args['cmd'] = 'SPEAKING_START';
-    var json = JSON.stringify(args);
+  rpcClient.on('disconnected', (args) => {
+    var result = {};
+    result['cmd'] = 'DISCONNECTED_WITH_DISCORD';
+    var json = JSON.stringify(result);
     sendMessageToWebBrowser(json);
-  } catch (error) {
-    console.error(error);
-  }
-});
+    rpcClient.destroy();
+    rpcClient = null;
+  });
 
-rpcClient.on('SPEAKING_STOP', (args) => {
-  // console.log('SPEAKING_STOP');
-  try {
-    args['cmd'] = 'SPEAKING_STOP';
-    var json = JSON.stringify(args);
-    sendMessageToWebBrowser(json);
-  } catch (error) {
-    console.error(error);
-  }
-});
+  rpcClient.on('VOICE_CHANNEL_SELECT', (args) => {
+    console.log('VOICE_CHANNEL_SELECT');
+    try {
+      args['cmd'] = 'VOICE_CHANNEL_SELECT';
+      var json = JSON.stringify(args);
+      sendMessageToWebBrowser(json);
+    } catch (error) {
+      console.error(error);
+    }
+  });
+
+  rpcClient.on('VOICE_STATE_CREATE', (args) => {
+    console.log('VOICE_STATE_CREATE');
+    try {
+      args['cmd'] = 'VOICE_STATE_CREATE';
+      var json = JSON.stringify(args);
+      sendMessageToWebBrowser(json);
+    } catch (error) {
+      console.error(error);
+    }
+  });
+
+  rpcClient.on('VOICE_STATE_DELETE', (args) => {
+    console.log('VOICE_STATE_DELETE');
+    try {
+      args['cmd'] = 'VOICE_STATE_DELETE';
+      var json = JSON.stringify(args);
+      sendMessageToWebBrowser(json);
+    } catch (error) {
+      console.error(error);
+    }
+  });
+
+  rpcClient.on('SPEAKING_START', (args) => {
+    if (development) {
+      console.log('SPEAKING_START');
+    }
+    try {
+      args['cmd'] = 'SPEAKING_START';
+      var json = JSON.stringify(args);
+      sendMessageToWebBrowser(json);
+    } catch (error) {
+      console.error(error);
+    }
+  });
+
+  rpcClient.on('SPEAKING_STOP', (args) => {
+    if (development) {
+      console.log('SPEAKING_STOP');
+    }
+    try {
+      args['cmd'] = 'SPEAKING_STOP';
+      var json = JSON.stringify(args);
+      sendMessageToWebBrowser(json);
+    } catch (error) {
+      console.error(error);
+    }
+  });
+}
+
