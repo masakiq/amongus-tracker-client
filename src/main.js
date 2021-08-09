@@ -29,6 +29,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false,
+      devTools: development,
     },
   });
 
@@ -311,4 +312,3 @@ function addListenerRpcClient(rpcClient) {
     }
   });
 }
-
