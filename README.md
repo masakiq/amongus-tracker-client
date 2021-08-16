@@ -35,3 +35,9 @@ env ENV_TYPE=development node_modules/.bin/electron src/
 ```sh
 node_modules/.bin/electron-builder -m
 ```
+
+### Windows 10
+
+```sh
+node_modules/.bin/electron-builder --win --x64
+```
