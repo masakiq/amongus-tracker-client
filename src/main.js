@@ -5,18 +5,104 @@ const path = require('path');
 const url = require('url');
 const RPC = require('discord-rpc');
 const WS = require('ws');
+const http = require('http');
 
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = '1';
 const development = process.env.ENV_TYPE == 'development';
+const wsServertPort = 6473;
+const httpServerPort = 6474;
 
 let mainWindow;
-const CustomUrlScheme = 'amongustracker';
+var mainUrl;
 var allowedOrigin = [];
 if (development) {
-  allowedOrigin.push('http://localhost:8080');
+  mainUrl = 'http://localhost:8080';
+  allowedOrigin.push(mainUrl);
 } else {
-  allowedOrigin.push('https://client.amongus-tracker.com');
+  mainUrl = 'https://client.amongus-tracker.com';
+  allowedOrigin.push(mainUrl);
 }
+
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (mainWindow === null) return;
+    focusMainWindow();
+  })
+}
+
+// HTTP Server
+const httpServer = http.createServer();
+const pathnames = [
+  '/oauth/callback',
+  '/favicon.ico'
+];
+
+httpServer.on('request', function(req, res) {
+  var pathname = url.parse(req.url).pathname;
+  var query = url.parse(req.url).query;
+
+  if (!pathnames.includes(pathname)) {
+    res.statusCode = 400;
+    res.end();
+    return;
+  }
+
+  if (pathname == '/favicon.ico') {
+    res.statusCode = 200;
+    res.end();
+    return;
+  }
+  res.statusCode = 200;
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  var content = `
+<!DOCTYPE html>
+  <body>
+    <p>AmongUsTracker アプリにリダイレクトしました。このウィンドウは閉じてください。</p>
+  </body>
+</html>
+`
+  res.write(content);
+  res.end();
+
+  if (mainWindow) {
+    var redirectUrl = mainUrl + '?' + query;
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.loadURL(redirectUrl);
+    mainWindow.show();
+    mainWindow.focus();
+  }
+  // focusMainWindow();
+});
+
+httpServer.listen(httpServerPort);
+
+httpServer.on('error', (error) => {
+  console.log(error);
+  app.quit();
+})
+
+// WebSocket Server
+
+const wsServer = new WS.Server({
+  verifyClient (info) {
+    console.log(info.origin);
+    console.log(info.req.headers.host);
+    return allowedOrigin.includes(info.origin);
+  },
+  port: wsServertPort
+});
+
+wsServer.on('error', (error) => {
+  console.log(error);
+  app.quit();
+})
+
+// main
 
 function createWindow() {
   const display = screen.getPrimaryDisplay();
@@ -33,11 +119,7 @@ function createWindow() {
     },
   });
 
-  if (development) {
-    mainWindow.loadURL('http://localhost:8080');
-  } else {
-    mainWindow.loadURL('https://client.amongus-tracker.com');
-  }
+  mainWindow.loadURL(mainUrl);
 
   // mainWindow.loadURL(url.format({
   //   pathname: path.join(__dirname, 'index.html'),
@@ -72,32 +154,21 @@ app.on('activate', () => {
   }
 });
 
-app.on('open-url', (e, url) => {
-  console.log(url);
-  if (mainWindow === null) {
-    createWindow();
+function focusMainWindow() {
+  let focusedWindow = BrowserWindow.getFocusedWindow();
+  if (!focusedWindow) {
+    const windowList = BrowserWindow.getAllWindows();
+    if (windowList && windowList[0]) {
+      let mainWindow = windowList[0];
+      mainWindow.show();
+      mainWindow.focus();
+    }
   }
-  mainWindow.reload();
-  mainWindow.loadURL(url.replace(CustomUrlScheme, 'http'));
-  mainWindow.focus();
-});
-
-app.setAsDefaultProtocolClient(CustomUrlScheme);
+}
 
 // ** for RPC **
 
 let rpcClient;
-// check origin
-// https://github.com/websockets/ws/issues/1271
-const wsServer = new WS.Server({
-  verifyClient (info) {
-    console.log(info.origin);
-    console.log(info.req.headers.host);
-    return allowedOrigin.includes(info.origin);
-  },
-  port: 6473
-});
-
 var subscribed = [];
 
 wsServer.on('connection', ws => {
